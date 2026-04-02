@@ -43,7 +43,7 @@ export class LotusApiService {
       }
 
       return await this.request<SearchProposalsResponse>(
-        `/v1/mcp/propostas?${params.toString()}`,
+        `/v1/mcp/proposals?${params.toString()}`,
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -53,7 +53,7 @@ export class LotusApiService {
 
   async getProposalDetails(id: string): Promise<unknown | ApiError> {
     try {
-      return await this.request<unknown>(`/v1/mcp/propostas/${id}`);
+      return await this.request<unknown>(`/v1/mcp/proposals/${id}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { error: message };
