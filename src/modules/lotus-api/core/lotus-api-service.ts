@@ -1,4 +1,9 @@
-import type { ApiError, ProposalFilters, SearchProposalsResponse } from './types.js';
+import type {
+  ApiError,
+  GetProviderProposalFilters,
+  ProposalFilters,
+  SearchProposalsResponse,
+} from './types.js';
 
 export class LotusApiService {
   private readonly baseUrl: string;
@@ -54,6 +59,26 @@ export class LotusApiService {
   async getProposalDetails(id: string): Promise<unknown | ApiError> {
     try {
       return await this.request<unknown>(`/v1/mcp/proposals/${id}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { error: message };
+    }
+  }
+
+  async getProviderProposalDetails(
+    filters: GetProviderProposalFilters,
+  ): Promise<unknown | ApiError> {
+    try {
+      const { provider, ...query } = filters;
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(query)) {
+        if (value !== undefined && value !== null) {
+          params.set(key, String(value));
+        }
+      }
+      return await this.request<unknown>(
+        `/v1/mcp/providers/${provider}/proposals?${params.toString()}`,
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { error: message };

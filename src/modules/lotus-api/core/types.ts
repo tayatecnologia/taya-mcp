@@ -54,3 +54,11 @@ export interface ProposalFilters {
 export interface ApiError {
   error: string;
 }
+
+export type ProviderName = 'BMP';
+
+export interface GetProviderProposalFilters {
+  provider: ProviderName;
+  cpf?: string;
+  providerId?: string;
+}

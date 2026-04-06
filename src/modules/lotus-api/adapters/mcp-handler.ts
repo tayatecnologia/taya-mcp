@@ -71,6 +71,48 @@ function registerGetProposalDetails(
   );
 }
 
+function registerGetProviderProposalDetails(
+  server: McpServer,
+  apiService: LotusApiService,
+): void {
+  server.registerTool(
+    'get_provider_proposal_details',
+    {
+      description:
+        'Fetches the details of a proposal directly from the provider (e.g. BMP). ' +
+        'Provide the desired provider ("BMP") and at least one identifier: ' +
+        'the customer\'s "cpf" or "providerId" (the proposal code at the provider). ' +
+        'When CPF is provided, returns the most recent proposal linked to it.',
+      inputSchema: {
+        provider: z.enum(['BMP']).describe('Provider to query'),
+        cpf: z.string().optional().describe('Customer CPF (digits only)'),
+        providerId: z
+          .string()
+          .optional()
+          .describe('Proposal code at the provider'),
+      },
+    },
+    async ({ provider, cpf, providerId }) => {
+      try {
+        if (!cpf && !providerId) {
+          return toError(
+            new Error('Provide at least one of the fields: cpf or providerId'),
+          );
+        }
+        return toText(
+          await apiService.getProviderProposalDetails({
+            provider,
+            cpf,
+            providerId,
+          }),
+        );
+      } catch (err) {
+        return toError(err);
+      }
+    },
+  );
+}
+
 // --- Entry point ---
 
 export function registerLotusApiTools(
@@ -79,4 +121,5 @@ export function registerLotusApiTools(
 ): void {
   registerSearchProposals(server, apiService);
   registerGetProposalDetails(server, apiService);
+  registerGetProviderProposalDetails(server, apiService);
 }
