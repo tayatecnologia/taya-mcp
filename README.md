@@ -1,104 +1,104 @@
 # taya-mcp
 
-## Visão Geral
+## Overview
 
-Servidor [Model Context Protocol (MCP)](https://modelcontextprotocol.io) construído em Node.js/TypeScript que expõe um conjunto de ferramentas para agentes de IA.
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server built with Node.js/TypeScript that exposes a set of tools for AI agents.
 
-O objetivo é permitir que agentes como o **Claude Code** ou o **Sub-Agente Investigador da Taya** consigam inspecionar sistemas internos e diagnosticar problemas em propostas diretamente durante uma conversa, sem precisar de acesso manual às ferramentas.
+The goal is to allow agents such as **Claude Code** or Taya's **Investigator Sub-Agent** to inspect internal systems and diagnose proposal issues directly during a conversation, without requiring manual access to any tooling.
 
-### Arquitetura
+### Architecture
 
-O projeto segue **Clean Architecture**. Cada integração vive no seu próprio módulo dentro de `src/modules/`, com separação clara entre duas camadas:
+The project follows **Clean Architecture**. Each integration lives in its own module under `src/modules/`, with a clear separation between two layers:
 
-| Camada | Localização | Responsabilidade |
+| Layer | Location | Responsibility |
 |---|---|---|
-| **Core** | `src/modules/<modulo>/core/` | Regra de negócio: conexão, consulta e mapeamento de dados |
-| **Adapter** | `src/modules/<modulo>/adapters/` | Transporte MCP: traduz as chamadas do protocolo para o Core e formata as respostas |
+| **Core** | `src/modules/<module>/core/` | Business logic: connection, queries, and data mapping |
+| **Adapter** | `src/modules/<module>/adapters/` | MCP transport: translates protocol calls to the Core and formats responses |
 
-Dessa forma, a lógica de negócio não conhece o MCP, e o adapter não conhece a fonte de dados — cada camada tem uma única responsabilidade.
-
----
-
-## Pré-requisitos
-
-- **Node.js** `>= 18` (com suporte a top-level `await` e ES Modules)
-- **Redis** rodando e acessível (local ou remoto) — necessário para as ferramentas BullMQ
-- **Lotus API** acessível — necessário para as ferramentas de propostas
-- **Claude Code** instalado (`npm install -g @anthropic-ai/claude-code`)
+This way, business logic has no knowledge of MCP, and the adapter has no knowledge of the data source — each layer has a single responsibility.
 
 ---
 
-## Setup Local
+## Prerequisites
+
+- **Node.js** `>= 18` (with top-level `await` and ES Modules support)
+- **Redis** running and accessible (local or remote) — required for BullMQ tools
+- **Lotus API** accessible — required for proposal tools
+- **Claude Code** installed (`npm install -g @anthropic-ai/claude-code`)
+
+---
+
+## Local Setup
 
 ```bash
-# Instalar dependências
+# Install dependencies
 npm install
 
-# Compilar o TypeScript
+# Compile TypeScript
 npm run build
 ```
 
-O artefato compilado estará em `dist/index.js`.
+The compiled artifact will be at `dist/index.js`.
 
 ---
 
-## Como conectar ao Claude Code
+## Connecting to Claude Code
 
-> **Importante:** não edite arquivos de configuração JSON manualmente (como `claude_desktop_config.json`). A edição manual é propensa a erros de sintaxe e de variáveis de ambiente que podem impedir o servidor de iniciar. Use sempre a CLI nativa do Claude Code.
+> **Important:** do not manually edit JSON config files (such as `claude_desktop_config.json`). Manual editing is error-prone and may prevent the server from starting due to syntax or environment variable issues. Always use the Claude Code native CLI.
 
-### Variáveis de ambiente
+### Environment Variables
 
-| Variável | Módulo | Obrigatório | Descrição |
+| Variable | Module | Required | Description |
 |---|---|---|---|
-| `REDIS_URL` | BullMQ | Sim (se usar BullMQ) | URL de conexão com o Redis |
-| `KNOWN_QUEUES` | BullMQ | Sim (se usar BullMQ) | Filas monitoradas, separadas por vírgula |
-| `LOTUS_API_BASE_URL` | Lotus API | Sim (se usar Lotus API) | URL base da Lotus API |
-| `LOTUS_API_KEY` | Lotus API | Sim (se usar Lotus API) | Chave de autenticação da Lotus API |
+| `REDIS_URL` | BullMQ | Yes (if using BullMQ) | Redis connection URL |
+| `KNOWN_QUEUES` | BullMQ | Yes (if using BullMQ) | Comma-separated list of monitored queues |
+| `LOTUS_API_BASE_URL` | Lotus API | Yes (if using Lotus API) | Lotus API base URL |
+| `LOTUS_API_KEY` | Lotus API | Yes (if using Lotus API) | Lotus API authentication key |
 
-> Cada módulo é habilitado automaticamente quando suas variáveis de ambiente estão presentes. É possível usar apenas o BullMQ, apenas a Lotus API, ou ambos simultaneamente.
+> Each module is enabled automatically when its environment variables are present. You can use only BullMQ, only the Lotus API, or both simultaneously.
 
-### Adicionar o servidor
+### Adding the Server
 
 ```bash
 claude mcp add taya-mcp \
-  -e "REDIS_URL=sua_url_redis_aqui" \
-  -e "KNOWN_QUEUES=fila1,fila2" \
+  -e "REDIS_URL=your_redis_url_here" \
+  -e "KNOWN_QUEUES=queue1,queue2" \
   -e "LOTUS_API_BASE_URL=https://api.lotus.example.com" \
-  -e "LOTUS_API_KEY=sua_chave_aqui" \
-  -- node /caminho/absoluto/para/taya-mcp/dist/index.js
+  -e "LOTUS_API_KEY=your_key_here" \
+  -- node /absolute/path/to/taya-mcp/dist/index.js
 ```
 
-**Exemplo prático** — monitorando a fila de cancelamento de FGTS e com acesso à Lotus API:
+**Practical example** — monitoring the FGTS cancellation queue with Lotus API access:
 
 ```bash
 claude mcp add taya-mcp \
   -e "REDIS_URL=redis://localhost:6379" \
   -e "KNOWN_QUEUES=fgts_bmp_cancellation" \
   -e "LOTUS_API_BASE_URL=https://api.lotus.example.com" \
-  -e "LOTUS_API_KEY=sua_chave_aqui" \
+  -e "LOTUS_API_KEY=your_key_here" \
   -- node /home/carlos/projects/taya-mcp/dist/index.js
 ```
 
-Para monitorar múltiplas filas, separe os nomes por vírgula:
+To monitor multiple queues, separate names with a comma:
 
 ```bash
-  -e "KNOWN_QUEUES=fgts_bmp_cancellation,outra_fila,mais_uma_fila"
+  -e "KNOWN_QUEUES=fgts_bmp_cancellation,another_queue,one_more_queue"
 ```
 
-### Atualizar variáveis de ambiente
+### Updating Environment Variables
 
-O Claude Code não permite editar um servidor MCP já registrado. Para atualizar, remova e adicione novamente:
+Claude Code does not support editing an already-registered MCP server. To update, remove and re-add it:
 
 ```bash
 claude mcp remove taya-mcp
 
 claude mcp add taya-mcp \
-  -e "REDIS_URL=nova_url_aqui" \
-  -e "KNOWN_QUEUES=fila_atualizada" \
-  -- node /caminho/absoluto/para/taya-mcp/dist/index.js
+  -e "REDIS_URL=new_url_here" \
+  -e "KNOWN_QUEUES=updated_queue" \
+  -- node /absolute/path/to/taya-mcp/dist/index.js
 ```
 
-### Verificar se está ativo
+### Checking if Active
 
 ```bash
 claude mcp list
@@ -106,28 +106,28 @@ claude mcp list
 
 ---
 
-## Ferramentas Disponíveis (Tools)
+## Available Tools
 
 ### Lotus API
 
-Ferramentas para consulta de propostas via Lotus API. Ativadas quando `LOTUS_API_BASE_URL` e `LOTUS_API_KEY` estão definidos.
+Tools for querying proposals via the Lotus API. Enabled when `LOTUS_API_BASE_URL` and `LOTUS_API_KEY` are set.
 
 #### `search_proposals`
 
-Busca propostas de todos os produtos (FGTS, CREDIT_CLT, CREDIT_CARD, CAR_EQUITY). Retorna lista paginada com métricas agregadas.
+Searches proposals across all products (FGTS, CREDIT_CLT, CREDIT_CARD, CAR_EQUITY). Returns a paginated list with aggregated metrics.
 
-**Parâmetros:**
+**Parameters:**
 
-| Nome | Tipo | Padrão | Descrição |
+| Name | Type | Default | Description |
 |---|---|---|---|
-| `query` | `string` | — | Filtro por CPF, nome do cliente ou código da proposta |
-| `status` | `string` | — | Filtro por status da proposta |
-| `startDate` | `string` | — | Data de início do intervalo (ISO 8601) |
-| `endDate` | `string` | — | Data de fim do intervalo (ISO 8601) |
-| `page` | `number` | `1` | Página da listagem |
-| `limit` | `number` | `15` | Quantidade máxima de resultados (máx. 100) |
+| `query` | `string` | — | Filter by CPF, customer name, or proposal code |
+| `status` | `string` | — | Filter by proposal status |
+| `startDate` | `string` | — | Start of date range (ISO 8601) |
+| `endDate` | `string` | — | End of date range (ISO 8601) |
+| `page` | `number` | `1` | Page number |
+| `limit` | `number` | `15` | Maximum number of results (max 100) |
 
-**Exemplo de retorno:**
+**Example response:**
 ```json
 {
   "data": [
@@ -135,7 +135,7 @@ Busca propostas de todos os produtos (FGTS, CREDIT_CLT, CREDIT_CARD, CAR_EQUITY)
       "code": 1001,
       "proposalId": "abc-123",
       "cpf": "123.456.789-00",
-      "customerName": "João Silva",
+      "customerName": "John Doe",
       "createdAt": "2026-03-30T10:00:00.000Z",
       "status": "APPROVED",
       "product": "FGTS",
@@ -163,23 +163,48 @@ Busca propostas de todos os produtos (FGTS, CREDIT_CLT, CREDIT_CARD, CAR_EQUITY)
 
 #### `get_proposal_details`
 
-Retorna todos os detalhes de uma proposta específica.
+Returns the full details of a single proposal.
 
-**Parâmetros:**
+**Parameters:**
 
-| Nome | Tipo | Descrição |
+| Name | Type | Description |
 |---|---|---|
-| `proposalId` | `string` | ID da proposta (obtido via `search_proposals`) |
+| `proposalId` | `string` | Proposal ID (obtained from `search_proposals`) |
 
-**Exemplo de retorno:**
+**Example response:**
 ```json
 {
   "proposalId": "abc-123",
   "cpf": "123.456.789-00",
-  "customerName": "João Silva",
+  "customerName": "John Doe",
   "status": "APPROVED",
   "product": "FGTS",
   "totalTransfer": 5000.00
+}
+```
+
+#### `get_provider_proposal_details`
+
+Fetches the details of a proposal directly from the provider (e.g. BMP). At least one identifier must be provided: the customer's CPF or the proposal code at the provider. When CPF is provided, returns the most recent proposal linked to it.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `provider` | `'BMP'` | Yes | Provider to query |
+| `cpf` | `string` | No* | Customer CPF (digits only) |
+| `providerId` | `string` | No* | Proposal code at the provider |
+
+*At least one of `cpf` or `providerId` must be provided.
+
+**Example response:**
+```json
+{
+  "proposalId": "bmp-456",
+  "cpf": "12345678900",
+  "status": "ACTIVE",
+  "product": "FGTS",
+  "totalTransfer": 3000.00
 }
 ```
 
@@ -187,15 +212,15 @@ Retorna todos os detalhes de uma proposta específica.
 
 ### BullMQ / Redis
 
-Ferramentas de leitura (read-only) para inspeção de filas BullMQ.
+Read-only tools for inspecting BullMQ queues.
 
 #### `get_queues_metrics`
 
-Retorna um resumo de contagem de jobs para todas as filas registradas em `KNOWN_QUEUES`.
+Returns a job count summary for all queues registered in `KNOWN_QUEUES`.
 
-**Parâmetros:** nenhum
+**Parameters:** none
 
-**Exemplo de retorno:**
+**Example response:**
 ```json
 [
   {
@@ -210,23 +235,23 @@ Retorna um resumo de contagem de jobs para todas as filas registradas em `KNOWN_
 
 #### `find_job_by_id`
 
-Busca um job específico pelo seu ID dentro de uma fila e retorna todos os seus detalhes.
+Finds a specific job by its ID within a queue and returns all its details.
 
-**Parâmetros:**
+**Parameters:**
 
-| Nome | Tipo | Descrição |
+| Name | Type | Description |
 |---|---|---|
-| `queueName` | `string` | Nome da fila onde o job está |
-| `jobId` | `string` | ID do job a ser buscado |
+| `queueName` | `string` | Name of the queue where the job is |
+| `jobId` | `string` | ID of the job to look up |
 
-**Exemplo de retorno:**
+**Example response:**
 ```json
 {
   "id": "1234",
   "queueName": "fgts_bmp_cancellation",
   "status": "failed",
   "payload": { "proposalId": "abc-789" },
-  "failedReason": "Timeout ao conectar com BMP",
+  "failedReason": "Timeout connecting to BMP",
   "attemptsMade": 3,
   "createdAt": "2026-03-30T10:00:00.000Z",
   "finishedAt": "2026-03-30T10:00:05.000Z"
@@ -235,23 +260,23 @@ Busca um job específico pelo seu ID dentro de uma fila e retorna todos os seus 
 
 #### `get_recent_failed_jobs`
 
-Retorna os jobs que falharam mais recentemente em uma fila específica.
+Returns the most recently failed jobs in a specific queue.
 
-**Parâmetros:**
+**Parameters:**
 
-| Nome | Tipo | Padrão | Descrição |
+| Name | Type | Default | Description |
 |---|---|---|---|
-| `queueName` | `string` | — | Nome da fila |
-| `limit` | `number` | `10` | Quantidade máxima de jobs a retornar |
+| `queueName` | `string` | — | Queue name |
+| `limit` | `number` | `10` | Maximum number of jobs to return |
 
-**Exemplo de retorno:**
+**Example response:**
 ```json
 [
   {
     "id": "1234",
     "queueName": "fgts_bmp_cancellation",
     "status": "failed",
-    "failedReason": "Timeout ao conectar com BMP",
+    "failedReason": "Timeout connecting to BMP",
     "attemptsMade": 3,
     "createdAt": "2026-03-30T10:00:00.000Z"
   }
