@@ -79,12 +79,12 @@ function registerGetProviderProposalDetails(
     'get_provider_proposal_details',
     {
       description:
-        'Fetches the details of a proposal directly from the provider (e.g. BMP). ' +
-        'Provide the desired provider ("BMP") and at least one identifier: ' +
+        'Fetches the details of a proposal directly from the provider (e.g. BMP, STARK). ' +
+        'Provide the desired provider ("BMP" for FGTS or "STARK" for (credit card or saque facil)) and at least one identifier: ' +
         'the customer\'s "cpf" or "providerId" (the proposal code at the provider). ' +
         'When CPF is provided, returns the most recent proposal linked to it.',
       inputSchema: {
-        provider: z.enum(['BMP']).describe('Provider to query'),
+        provider: z.enum(['BMP', 'STARK']).describe('Provider to query'),
         cpf: z.string().optional().describe('Customer CPF (digits only)'),
         providerId: z
           .string()

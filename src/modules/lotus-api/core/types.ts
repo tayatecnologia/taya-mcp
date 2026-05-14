@@ -55,7 +55,7 @@ export interface ApiError {
   error: string;
 }
 
-export type ProviderName = 'BMP';
+export type ProviderName = 'BMP' | 'STARK';
 
 export interface GetProviderProposalFilters {
   provider: ProviderName;
